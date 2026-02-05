@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Immutable IP Registry</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">Immutable IP Management</p>
+        <h1>Register, search, and license IP with on-chain proof.</h1>
+        <p class="subtitle">
+          Upload your idea, store proofs on blockchain, and enable licensing & ownership transfers.
+        </p>
+      </div>
+      <div class="card">
+        <h2>Registration Checklist</h2>
+        <ul>
+          <li>Hash stored on-chain</li>
+          <li>Files archived on IPFS/Filebase</li>
+          <li>Timestamped ownership proof</li>
+          <li>Transfer + licensing support</li>
+        </ul>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Register IP</h2>
+        <form id="register-form">
+          <label>
+            Title
+            <input name="title" required />
+          </label>
+          <label>
+            Owner Wallet Address
+            <input name="owner" placeholder="0x..." required />
+          </label>
+          <label>
+            Summary
+            <textarea name="description" rows="3"></textarea>
+          </label>
+          <label>
+            Upload File
+            <input name="file" type="file" required />
+          </label>
+          <button type="submit">Register IP</button>
+        </form>
+        <div id="register-result" class="result"></div>
+      </section>
+
+      <section class="card">
+        <h2>Public IP Registry</h2>
+        <form id="search-form">
+          <input name="query" placeholder="Search by keyword or hash" />
+          <button type="submit">Search</button>
+        </form>
+        <div id="search-results" class="result"></div>
+      </section>
+
+      <section class="card">
+        <h2>Ownership Transfer</h2>
+        <form id="transfer-form">
+          <input name="id" type="number" placeholder="Record ID" required />
+          <input name="newOwner" placeholder="New owner address" required />
+          <input name="note" placeholder="Transfer note" />
+          <button type="submit">Transfer</button>
+        </form>
+        <div id="transfer-result" class="result"></div>
+      </section>
+
+      <section class="card">
+        <h2>Licensing</h2>
+        <form id="license-form">
+          <input name="id" type="number" placeholder="Record ID" required />
+          <input name="price" placeholder="License price (wei)" required />
+          <input name="durationDays" placeholder="Duration (days)" required />
+          <button type="submit">Set License</button>
+        </form>
+        <div id="license-result" class="result"></div>
+      </section>
+
+      <section class="card">
+        <h2>Advanced Ideas</h2>
+        <ul class="feature-grid">
+          <li>
+            <strong>AI Similarity Check</strong>
+            <span>Detect potential duplicate IP before registration.</span>
+          </li>
+          <li>
+            <strong>Infringement Tracking</strong>
+            <span>Crawl the web and link evidence to blockchain records.</span>
+          </li>
+          <li>
+            <strong>Anonymous Proof</strong>
+            <span>Register hashes first, reveal full details only in disputes.</span>
+          </li>
+          <li>
+            <strong>DAO Dispute Resolution</strong>
+            <span>Community arbitration with on-chain evidence.</span>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>Prototype UI for immutable IP management workflows.</p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
