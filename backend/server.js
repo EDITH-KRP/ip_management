@@ -1,6 +1,8 @@
 import express from "express";
 import multer from "multer";
 import crypto from "crypto";
+import path from "path";
+import { fileURLToPath } from "url";
 
 import {
   registerRecord,
@@ -10,10 +12,14 @@ import {
   setLicense
 } from "./registryStore.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 const computeHash = (buffer) => crypto.createHash("sha256").update(buffer).digest("hex");
 
