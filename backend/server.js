@@ -51,14 +51,29 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 
 const computeHash = (buffer) => crypto.createHash("sha256").update(buffer).digest("hex");
 
+// Transaction logging
+const transactionLog = [];
+function logTransaction(type, details) {
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    type,
+    details
+  };
+  transactionLog.push(logEntry);
+  console.log(`📝 [LOG] ${type}:`, JSON.stringify(logEntry));
+  return logEntry;
+}
+
 // Initialize services
 let wallet = null;
 let filebaseStorage = null;
+let walletAddress = null;
 
 try {
   wallet = initializeWallet();
+  walletAddress = getWalletAddress(wallet);
   filebaseStorage = new FilebaseStorage();
-  console.log(`✓ Wallet initialized: ${getWalletAddress(wallet)}`);
+  console.log(`✓ Wallet initialized: ${walletAddress}`);
   console.log(`✓ Filebase storage initialized`);
 } catch (error) {
   console.warn(`⚠ Service initialization warning: ${error.message}`);
@@ -71,13 +86,25 @@ app.post("/api/ip/register", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "file is required" });
     }
 
-    const { title, description, owner } = req.body;
-    if (!title || !owner) {
-      return res.status(400).json({ error: "title and owner are required" });
+    const { title, description } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: "title is required" });
     }
+
+    // Use server wallet as owner for all registrations
+    const owner = walletAddress || "server-wallet";
 
     // Compute file hash
     const ipHash = computeHash(req.file.buffer);
+    
+    // Log the transaction
+    logTransaction("IP_REGISTRATION_INITIATED", {
+      title,
+      fileHash: ipHash,
+      fileSize: req.file.size,
+      fileName: req.file.originalname,
+      owner: owner
+    });
     
     // Upload to Filebase
     let fileInfo = null;
@@ -96,7 +123,17 @@ app.post("/api/ip/register", upload.single("file"), async (req, res) => {
       description: description ?? "",
       ipHash,
       owner,
+      fileCic: fileInfo.cid,
+      gatewayUrl: fileInfo.gatewayUrl
+    });
+
+    // Log successful registration
+    logTransaction("IP_REGISTRATION_COMPLETED", {
+      recordId: record.id,
+      title,
+      ipHash,
       fileCid: fileInfo.cid,
+      isDuplicate,
       gatewayUrl: fileInfo.gatewayUrl
     });
 
@@ -106,22 +143,40 @@ app.post("/api/ip/register", upload.single("file"), async (req, res) => {
       try {
         const metadataURI = fileInfo.gatewayUrl;
         blockchainTx = await registerIPOnChain(wallet, `0x${ipHash}`, metadataURI);
+        
+        logTransaction("BLOCKCHAIN_REGISTRATION_SUCCESS", {
+          recordId: record.id,
+          transactionHash: blockchainTx.transactionHash,
+          blockNumber: blockchainTx.blockNumber
+        });
       } catch (error) {
         console.warn("Blockchain registration failed:", error.message);
+        logTransaction("BLOCKCHAIN_REGISTRATION_FAILED", {
+          recordId: record.id,
+          error: error.message
+        });
         // Continue without blockchain registration
       }
     }
 
     return res.status(isDuplicate ? 200 : 201).json({
+      success: true,
+      message: isDuplicate ? "IP already registered" : "IP registered successfully",
       record,
       isDuplicate,
+      processedBy: walletAddress ? "Server Wallet" : "Local Storage Only",
       filebaseInfo: {
         cid: fileInfo.cid,
         gatewayUrl: fileInfo.gatewayUrl
       },
-      blockchainTx: blockchainTx || null
+      blockchainTx: blockchainTx || null,
+      auditNote: "All transactions logged on server for security and audit purposes"
     });
   } catch (error) {
+    logTransaction("IP_REGISTRATION_ERROR", {
+      error: error.message,
+      stack: error.stack
+    });
     console.error("Registration error:", error);
     return res.status(500).json({ error: error.message || "Registration failed" });
   }
@@ -146,41 +201,110 @@ app.get("/api/ip/:id", (req, res) => {
 });
 
 app.post("/api/ip/:id/transfer", (req, res) => {
-  const { newOwner, note } = req.body;
-  if (!newOwner) {
-    return res.status(400).json({ error: "newOwner is required" });
+  try {
+    const { newOwner, note } = req.body;
+    if (!newOwner) {
+      return res.status(400).json({ error: "newOwner is required" });
+    }
+
+    const recordId = Number(req.params.id);
+    
+    // Log transfer request
+    logTransaction("OWNERSHIP_TRANSFER_INITIATED", {
+      recordId,
+      previousOwner: walletAddress,
+      newOwner,
+      note: note ?? ""
+    });
+
+    const record = transferRecord({
+      id: recordId,
+      newOwner,
+      note: note ?? ""
+    });
+
+    if (!record) {
+      logTransaction("OWNERSHIP_TRANSFER_FAILED", {
+        recordId,
+        error: "record not found"
+      });
+      return res.status(404).json({ error: "record not found" });
+    }
+
+    // Log successful transfer
+    logTransaction("OWNERSHIP_TRANSFER_COMPLETED", {
+      recordId,
+      newOwner,
+      note: note ?? ""
+    });
+
+    return res.json({
+      success: true,
+      message: "Ownership transfer processed",
+      record,
+      processedBy: walletAddress ? "Server Wallet" : "Local Storage Only",
+      auditNote: "Transfer has been logged and recorded on the server"
+    });
+  } catch (error) {
+    logTransaction("OWNERSHIP_TRANSFER_ERROR", {
+      recordId: req.params.id,
+      error: error.message
+    });
+    return res.status(500).json({ error: error.message || "Transfer failed" });
   }
-
-  const record = transferRecord({
-    id: Number(req.params.id),
-    newOwner,
-    note: note ?? ""
-  });
-
-  if (!record) {
-    return res.status(404).json({ error: "record not found" });
-  }
-
-  return res.json({ record });
 });
 
 app.post("/api/ip/:id/license", (req, res) => {
-  const { price, durationDays } = req.body;
-  if (price === undefined || durationDays === undefined) {
-    return res.status(400).json({ error: "price and durationDays are required" });
+  try {
+    const { price, durationDays } = req.body;
+    if (price === undefined || durationDays === undefined) {
+      return res.status(400).json({ error: "price and durationDays are required" });
+    }
+
+    const recordId = Number(req.params.id);
+
+    // Log license setting
+    logTransaction("LICENSE_TERMS_INITIATED", {
+      recordId,
+      price,
+      durationDays
+    });
+
+    const record = setLicense({
+      id: recordId,
+      price,
+      durationDays
+    });
+
+    if (!record) {
+      logTransaction("LICENSE_TERMS_FAILED", {
+        recordId,
+        error: "record not found"
+      });
+      return res.status(404).json({ error: "record not found" });
+    }
+
+    // Log successful license configuration
+    logTransaction("LICENSE_TERMS_COMPLETED", {
+      recordId,
+      price,
+      durationDays
+    });
+
+    return res.json({
+      success: true,
+      message: "License terms configured",
+      record,
+      processedBy: walletAddress ? "Server Wallet" : "Local Storage Only",
+      auditNote: "License configuration has been logged and recorded on the server"
+    });
+  } catch (error) {
+    logTransaction("LICENSE_TERMS_ERROR", {
+      recordId: req.params.id,
+      error: error.message
+    });
+    return res.status(500).json({ error: error.message || "Failed to set license" });
   }
-
-  const record = setLicense({
-    id: Number(req.params.id),
-    price,
-    durationDays
-  });
-
-  if (!record) {
-    return res.status(404).json({ error: "record not found" });
-  }
-
-  return res.json({ record });
 });
 
 // Wallet info endpoint
@@ -193,6 +317,15 @@ app.get("/api/wallet/info", (req, res) => {
     address: getWalletAddress(wallet),
     network: "Sepolia Testnet",
     status: "connected"
+  });
+});
+
+// Transaction audit log endpoint
+app.get("/api/audit/transactions", (req, res) => {
+  return res.json({
+    totalTransactions: transactionLog.length,
+    transactions: transactionLog.slice(-100), // Return last 100 transactions
+    note: "All transactions are logged on the server for security and audit purposes"
   });
 });
 

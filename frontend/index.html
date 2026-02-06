@@ -16,12 +16,11 @@
         </p>
       </div>
       <div class="card">
-        <h2>Wallet Status</h2>
-        <div id="wallet-status" class="wallet-info">
-          <p>Status: <span id="wallet-connected">Disconnected</span></p>
-          <p>Address: <span id="wallet-address">-</span></p>
-          <p>Network: <span id="wallet-network">-</span></p>
-          <button id="connect-wallet">Connect Wallet (MetaMask)</button>
+        <h2>Server Status</h2>
+        <div id="server-status" class="wallet-info">
+          <p>Backend: <span id="backend-status">Checking...</span></p>
+          <p>Wallet Address: <span id="server-wallet-address">-</span></p>
+          <p>Network: <span id="server-network">-</span></p>
         </div>
       </div>
       <div class="card">
@@ -42,10 +41,6 @@
           <label>
             Title
             <input name="title" required />
-          </label>
-          <label>
-            Owner Wallet Address
-            <input name="owner" placeholder="0x..." required />
           </label>
           <label>
             Summary
@@ -72,21 +67,39 @@
       <section class="card">
         <h2>Ownership Transfer</h2>
         <form id="transfer-form">
-          <input name="id" type="number" placeholder="Record ID" required />
-          <input name="newOwner" placeholder="New owner address" required />
-          <input name="note" placeholder="Transfer note" />
-          <button type="submit">Transfer</button>
+          <label>
+            Record ID
+            <input name="id" type="number" placeholder="Record ID" required />
+          </label>
+          <label>
+            New Owner Address
+            <input name="newOwner" placeholder="0x..." required />
+          </label>
+          <label>
+            Transfer Reason/Note
+            <textarea name="note" rows="2" placeholder="Why is ownership being transferred?"></textarea>
+          </label>
+          <button type="submit">Submit Transfer Request</button>
         </form>
         <div id="transfer-result" class="result"></div>
       </section>
 
       <section class="card">
-        <h2>Licensing</h2>
+        <h2>Set License Terms</h2>
         <form id="license-form">
-          <input name="id" type="number" placeholder="Record ID" required />
-          <input name="price" placeholder="License price (wei)" required />
-          <input name="durationDays" placeholder="Duration (days)" required />
-          <button type="submit">Set License</button>
+          <label>
+            Record ID
+            <input name="id" type="number" placeholder="Record ID" required />
+          </label>
+          <label>
+            License Price (in wei)
+            <input name="price" placeholder="1000000000000000000" required />
+          </label>
+          <label>
+            Duration (days)
+            <input name="durationDays" type="number" placeholder="30" required />
+          </label>
+          <button type="submit">Set License Terms</button>
         </form>
         <div id="license-result" class="result"></div>
       </section>
