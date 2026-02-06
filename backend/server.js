@@ -70,7 +70,8 @@ let filebaseStorage = null;
 let walletAddress = null;
 
 try {
-  wallet = initializeWallet();
+  const walletData = initializeWallet();
+  wallet = walletData.wallet;
   walletAddress = getWalletAddress(wallet);
   filebaseStorage = new FilebaseStorage();
   console.log(`✓ Wallet initialized: ${walletAddress}`);
