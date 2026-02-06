@@ -25,7 +25,7 @@ const saveStore = (data) => {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 };
 
-export const registerRecord = ({ title, description, ipHash, owner, fileCid }) => {
+export const registerRecord = ({ title, description, ipHash, owner, fileCid, gatewayUrl }) => {
   const store = loadStore();
   const existing = store.records.find((record) => record.ipHash === ipHash);
   if (existing) {
@@ -39,6 +39,7 @@ export const registerRecord = ({ title, description, ipHash, owner, fileCid }) =
     ipHash,
     owner,
     fileCid,
+    gatewayUrl: gatewayUrl || `https://ipfs.filebase.io/ipfs/${fileCid}`,
     timestamp: new Date().toISOString(),
     transfers: [],
     licenses: []

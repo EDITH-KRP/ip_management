@@ -5,10 +5,16 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "deploy-contract": "npx hardhat run contracts/deploy.js --network sepolia"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "multer": "^2.0.1"
+    "multer": "^2.0.1",
+    "ethers": "^6.13.0",
+    "axios": "^1.6.0",
+    "form-data": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "cors": "^2.8.5"
   }
 }

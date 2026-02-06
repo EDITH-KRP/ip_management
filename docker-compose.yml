@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - SEPOLIA_RPC_URL=${SEPOLIA_RPC_URL}
+      - WALLET_PRIVATE_KEY=${WALLET_PRIVATE_KEY}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
+      - FILEBASE_API_KEY=${FILEBASE_API_KEY}
+      - FILEBASE_API_SECRET=${FILEBASE_API_SECRET}
+    volumes:
+      - ./backend:/app/backend
+      - /app/backend/node_modules
+    command: npm start
